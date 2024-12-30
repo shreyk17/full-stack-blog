@@ -19,7 +19,7 @@ if (!PUBLISHABLE_KEY) {
   throw new Error("Missing Publishable Key");
 }
 
-const router = createBrowserRouter([
+const browserRouter = createBrowserRouter([
   {
     element: <MainLayout />,
     children: [
@@ -54,7 +54,7 @@ const router = createBrowserRouter([
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
-      <RouterProvider router={router} />
+      <RouterProvider router={browserRouter} />
     </ClerkProvider>
   </StrictMode>
 );

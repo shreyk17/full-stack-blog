@@ -12,6 +12,13 @@ const Image = ({ src, className, w, h, alt }) => {
       alt={alt}
       width={w}
       height={h}
+      // to resize image
+      transformation={[
+        {
+          width: w,
+          height: h,
+        },
+      ]}
     />
   );
 };

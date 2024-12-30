@@ -8,3 +8,12 @@ body {
     overflow-x: hidden;
     font-family: "Montserrat", sans-serif;
 }
+
+.animatedButton{
+    animation-duration: 10000ms;
+}
+/* this to remove focus from input box on click */
+input:focus {
+  outline: none;
+  border: none; /* Optional: Removes any border */
+}
