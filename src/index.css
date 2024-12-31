@@ -17,3 +17,14 @@ input:focus {
   outline: none;
   border: none; /* Optional: Removes any border */
 }
+.ql-container{
+  border: none !important;
+}
+
+.ql-toolbar{
+   border: none !important;
+}
+
+.ql-editor{
+   border: none !important;
+}
