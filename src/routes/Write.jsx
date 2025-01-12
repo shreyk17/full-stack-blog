@@ -2,7 +2,7 @@ import { useAuth, useUser } from "@clerk/clerk-react";
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 // eslint-disable-next-line no-unused-vars
-import React from "react";
+import React, { useEffect } from "react";
 import { useState } from "react";
 import ReactQuill from "react-quill-new";
 import "react-quill/dist/quill.snow.css";
@@ -10,29 +10,9 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { MdAddPhotoAlternate } from "react-icons/md";
 import { RiVideoAddFill } from "react-icons/ri";
-import { IKContext, IKUpload } from "imagekitio-react";
-
-// IMAGEKIT AUTHENTICATOR
-const authenticator = async () => {
-  try {
-    const response = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/posts/upload-auth`
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `Request failed with status ${response.status}: ${errorText}`
-      );
-    }
-
-    const data = await response.json();
-    const { signature, expire, token } = data;
-    return { signature, expire, token };
-  } catch (error) {
-    throw new Error(`Authentication request failed: ${error.message}`);
-  }
-};
+import Upload from "../components/Upload";
+import { IKImage } from "imagekitio-react";
+import Image from "../components/Image";
 
 const Write = () => {
   const { isLoaded, isSignedIn } = useUser();
@@ -43,7 +23,26 @@ const Write = () => {
 
   const [value, setValue] = useState("");
   const [cover, setCover] = useState("");
+  const [video, setVideo] = useState("");
+  const [image, setImage] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [progress, setProgress] = useState(0);
+
+  //to show image in the react quill
+  useEffect(() => {
+    image && setValue((prev) => prev + `<p><image src="${image.url}" /></p>`);
+  }, [image]);
+
+  useEffect(() => {
+    video &&
+      setValue(
+        (prev) => prev + `<p><iframe class="ql-video" src="${video.url}" /></p>`
+      );
+  }, [video]);
+
+  useEffect(() => {
+    console.log(imageUrl);
+  }, [imageUrl]);
 
   const mutation = useMutation({
     mutationFn: async (newPost) => {
@@ -73,29 +72,12 @@ const Write = () => {
     return <div className="">You should login first...</div>;
   }
 
-  // IMAGEKIT ERROR HANDLING
-  const onError = (err) => {
-    toast.error(
-      "Something went wrong file uploading image. Please try again later"
-    );
-    console.error(err);
-  };
-
-  const onSuccess = (res) => {
-    console.log(res);
-    setCover(res);
-  };
-
-  const onUploadProgress = (progress) => {
-    console.log(progress);
-    setProgress(Math.round((progress.loaded / progress.total) * 100));
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
 
     const data = {
+      img: cover.filePath || "",
       title: formData.get("title"),
       category: formData.get("category"),
       desc: formData.get("desc"),
@@ -112,22 +94,21 @@ const Write = () => {
         onSubmit={handleSubmit}
         className="flex flex-col gap-6 flex-1 mb-6 "
       >
-        {/* <button className="w-max p-2 shadow-md rounded-xl text-sm text-gray-500 bg-white">
-          Add your cover images here!
-        </button> */}
-        <IKContext
-          publicKey={import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY}
-          urlEndpoint={import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT}
-          authenticator={authenticator}
-        >
-          <IKUpload
-            useUniqueFileName
-            onError={onError}
-            onSuccess={onSuccess}
-            onUploadProgress={onUploadProgress}
-            //fileName="test-upload.png"
-          />
-        </IKContext>
+        {imageUrl ? (
+          <Image src={imageUrl} w="50" h="50" />
+        ) : (
+          <Upload
+            type="image"
+            setProgress={setProgress}
+            setData={setCover}
+            setImageUrl={setImageUrl}
+          >
+            <button className="w-max p-2 shadow-md rounded-xl text-sm text-gray-500 bg-white">
+              Add your cover images here!
+            </button>
+          </Upload>
+        )}
+
         <input
           className="text-4xl font-semibold bg-transparent outline-none"
           type="text"
@@ -158,18 +139,23 @@ const Write = () => {
           placeholder="A short description"
           className="p-4 border-none outline-none rounded-xl bg-white shadow-md"
         />
-        <div className="flex">
+        <div className="flex flex-1">
           <div className="flex flex-col gap-2 mr-2">
             {/* <div className="cursor-pointer">📷</div>
             <div className="cursor-pointer">📽️</div> */}
-            <MdAddPhotoAlternate className="cursor-pointer" />
-            <RiVideoAddFill className="cursor-pointer" />
+            <Upload type="image" setProgress={setProgress} setData={setImage}>
+              <MdAddPhotoAlternate size={35} className="cursor-pointer" />
+            </Upload>
+            <Upload type="video" setProgress={setProgress} setData={setVideo}>
+              <RiVideoAddFill size={35} className="cursor-pointer" />
+            </Upload>
           </div>
           <ReactQuill
             className="flex-1 rounded-xl bg-white shadow-md border-none"
             theme="snow"
             value={value}
             onChange={setValue}
+            readOnly={0 < progress && progress < 100}
           />
         </div>
         <button

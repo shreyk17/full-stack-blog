@@ -1,39 +1,68 @@
 import React from "react";
 import PostListItem from "./PostListItem";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import axios from "axios";
-
+import InfiniteScroll from "react-infinite-scroll-component";
 // API call
-const fetchPost = async () => {
-  const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/posts`);
+const fetchPost = async (pageParam) => {
+  const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/posts`, {
+    params: { page: pageParam, limit: 2 },
+  });
   return res.data;
 };
 
 const PostList = () => {
-  const { isPending, error, data } = useQuery({
-    queryKey: ["repoData"],
-    queryFn: () => fetchPost(),
+  // const { isPending, error, data } = useQuery({
+  //   queryKey: ["repoData"],
+  //   queryFn: () => fetchPost(),
+  // });
+
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    status,
+  } = useInfiniteQuery({
+    queryKey: ["posts"],
+    queryFn: ({ pageParam = 1 }) => fetchPost(pageParam),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, pages) =>
+      lastPage.hasMoreData ? pages.length + 1 : undefined,
   });
-
-  if (isPending) {
-    return "Loading....";
-  }
-
-  if (error) {
-    return "An error has occured " + error.message;
-  }
 
   console.log(data);
 
+  if (status === "pending") {
+    return "Loading....";
+  }
+
+  if (status === "error") {
+    return "Something went wrong!";
+  }
+
+  const allPosts = data?.pages[0]?.data?.flatMap((page) => page.posts) || [];
+
+  console.log(data?.pages[0]?.data[0]._id);
+
   return (
-    <div className="flex flex-col gap-12 mb-8">
-      <PostListItem />
-      <PostListItem />
-      <PostListItem />
-      <PostListItem />
-      <PostListItem />
-      <PostListItem />
-    </div>
+    <InfiniteScroll
+      dataLength={allPosts.length}
+      next={fetchNextPage}
+      hasMore={!!hasNextPage}
+      loader={<h4>Loading more posts ...</h4>}
+      endMessage={
+        <p style={{ textAlign: "center" }}>
+          <b>Yay! you have seen it all, get some rest</b>
+        </p>
+      }
+    >
+      {allPosts.map((post) => (
+        <PostListItem key={post._id} post={post} />
+      ))}
+    </InfiniteScroll>
   );
 };
 
